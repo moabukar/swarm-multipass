@@ -24,16 +24,27 @@ tasks:
       - multipass exec swarm-worker -- sudo chown root:docker /var/run/docker.sock
 
   swarm-init:
-    desc: "Initialize Docker Swarm on the manager node"
+    desc: "Initialize Docker Swarm on the manager node and get the token"
     cmds:
-      - multipass exec swarm-manager -- docker swarm init --advertise-addr $(multipass info swarm-manager | grep 'IPv4' | awk 'NR==1{print $2}')
-      - multipass exec swarm-manager -- docker swarm join-token worker -q | tee swarm-token.txt
+      # 1) Run `docker swarm init` inside the manager VM, *including* hostname -I
+      - multipass exec swarm-manager -- bash -c 'docker swarm init --advertise-addr $(hostname -I | awk "{print \$1}")'
+
+      # 2) Generate the worker token file on the manager
+      - multipass exec swarm-manager -- bash -c 'docker swarm join-token worker -q > /home/ubuntu/swarm-token.txt'
+
+      # 3) Copy swarm-token.txt from manager to your local machine
+      - multipass transfer swarm-manager:/home/ubuntu/swarm-token.txt ./swarm-token.txt
+
 
   join-worker:
     desc: "Join worker node to the Swarm"
     cmds:
-      - multipass transfer swarm-token.txt swarm-worker:/home/ubuntu/swarm-token.txt
-      - multipass exec swarm-worker -- bash -c 'docker swarm join --token $(cat /home/ubuntu/swarm-token.txt) $(multipass info swarm-manager | grep "IPv4" | awk "NR==1{print \$2}"):2377'
+      - multipass transfer ./swarm-token.txt swarm-worker:/home/ubuntu/swarm-token.txt
+      - |
+        MANAGER_IP=$(multipass exec swarm-manager -- hostname -I | awk '{print $1}')
+        multipass exec swarm-worker -- docker swarm join \
+          --token $(cat ./swarm-token.txt) \
+          ${MANAGER_IP}:2377
 
   deploy-nginx:
     desc: "Deploy an Nginx service in Swarm"
