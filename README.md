@@ -8,7 +8,7 @@ This demo showcases the setup of a Docker Swarm cluster using Multipass and Task
 - Taskfile – for task automation
 - Docker (installed inside the VMs)
 
-## Task commands
+## Task commands (Some of the Task commands needs some work)
 
 - `task init` - Launches swarm-manager and swarm-worker VMs. Installs Docker and sets up permissions.
 - `task swarm-init` - Initialises Docker Swarm on the manager node.
@@ -19,7 +19,7 @@ This demo showcases the setup of a Docker Swarm cluster using Multipass and Task
 - `task all` - Test everything e2e
 - `task cleanup` - Deletes all VMs and cleans up resources.
 
-## Setup
+## Manual Setup (Works)
 
 ```bash
 

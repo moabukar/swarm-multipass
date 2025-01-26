@@ -4,8 +4,8 @@ tasks:
   init:
     desc: "Initialize Multipass VMs and install Docker"
     cmds:
-      - multipass launch --name swarm-manager --mem 2G --disk 10G --cpus 2 --network en0
-      - multipass launch --name swarm-worker --mem 2G --disk 10G --cpus 2 --network en0
+      - multipass launch --name swarm-manager --memory 2G --disk 10G --cpus 2 --network en0
+      - multipass launch --name swarm-worker --memory 2G --disk 10G --cpus 2 --network en0
       - multipass list
       - task:install-docker
 
@@ -26,20 +26,20 @@ tasks:
   swarm-init:
     desc: "Initialize Docker Swarm on the manager node"
     cmds:
-      - multipass exec swarm-manager -- docker swarm init --advertise-addr $(hostname -I | awk '{print $1}')
-      - echo "Swarm initialized. Run task:join-worker to add worker node"
+      - multipass exec swarm-manager -- docker swarm init --advertise-addr $(multipass info swarm-manager | grep 'IPv4' | awk 'NR==1{print $2}')
+      - multipass exec swarm-manager -- docker swarm join-token worker -q | tee swarm-token.txt
 
   join-worker:
     desc: "Join worker node to the Swarm"
     cmds:
-      - multipass exec swarm-manager -- docker swarm join-token worker -q > /tmp/swarm_token
-      - multipass exec swarm-worker -- docker swarm join --token $(cat /tmp/swarm_token) $(multipass info swarm-manager | grep IPv4 | awk '{print $2}'):2377
+      - multipass transfer swarm-token.txt swarm-worker:/home/ubuntu/swarm-token.txt
+      - multipass exec swarm-worker -- bash -c 'docker swarm join --token $(cat /home/ubuntu/swarm-token.txt) $(multipass info swarm-manager | grep "IPv4" | awk "NR==1{print \$2}"):2377'
 
   deploy-nginx:
     desc: "Deploy an Nginx service in Swarm"
     cmds:
       - multipass exec swarm-manager -- docker service create --name nginx --publish 8080:80 --replicas 2 nginx
-      - echo "Nginx service deployed. Access at http://$(multipass info swarm-manager | grep IPv4 | awk '{print $2}'):8080"
+      - echo "Nginx service deployed. Access at http://$(multipass info swarm-manager | grep 'IPv4' | awk 'NR==1{print $2}'):8080"
 
   check:
     desc: "Check Swarm nodes and services"
@@ -51,7 +51,7 @@ tasks:
   test-nginx:
     desc: "Test access to the Nginx service"
     cmds:
-      - multipass exec swarm-worker -- curl http://$(multipass info swarm-manager | grep IPv4 | awk '{print $2}'):8080
+      - multipass exec swarm-worker -- curl http://$(multipass info swarm-manager | grep 'IPv4' | awk 'NR==1{print $2}'):8080
 
   full-setup:
     desc: "Run full end-to-end setup and deployment"
@@ -61,7 +61,7 @@ tasks:
       - task:join-worker
       - task:deploy-nginx
       - task:check
-      - echo "Setup complete! Access Nginx at http://$(multipass info swarm-manager | grep IPv4 | awk '{print $2}'):8080"
+      - echo "Setup complete! Access Nginx at http://$(multipass info swarm-manager | grep 'IPv4' | awk 'NR==1{print $2}'):8080"
 
   cleanup:
     desc: "Remove Multipass VMs and clean up"
