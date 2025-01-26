@@ -53,9 +53,25 @@ tasks:
     cmds:
       - multipass exec swarm-worker -- curl http://$(multipass info swarm-manager | grep IPv4 | awk '{print $2}'):8080
 
+  full-setup:
+    desc: "Run full end-to-end setup and deployment"
+    cmds:
+      - task:init
+      - task:swarm-init
+      - task:join-worker
+      - task:deploy-nginx
+      - task:check
+      - echo "Setup complete! Access Nginx at http://$(multipass info swarm-manager | grep IPv4 | awk '{print $2}'):8080"
+
   cleanup:
     desc: "Remove Multipass VMs and clean up"
     cmds:
       - multipass delete swarm-manager swarm-worker
       - multipass purge
       - echo "All resources cleaned up."
+
+  full-cleanup:
+    desc: "Run cleanup process to remove all VMs"
+    cmds:
+      - task:cleanup
+      - echo "All resources have been cleaned up successfully."

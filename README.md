@@ -1,5 +1,24 @@
 # Docker Swarm via multipass
 
+This demo showcases the setup of a Docker Swarm cluster using Multipass and Taskfile, making it easy to spin up, manage, and deploy services on a Swarm cluster.
+
+## Prerequisites
+
+- Multipass – for managing lightweight Ubuntu VMs
+- Taskfile – for task automation
+- Docker (installed inside the VMs)
+
+## Task commands
+
+- `task init` - Launches swarm-manager and swarm-worker VMs. Installs Docker and sets up permissions.
+- `task swarm-init` - Initialises Docker Swarm on the manager node.
+- `task join-worker` - Joins the worker node to the Swarm cluster.
+- `task deploy-nginx` - Deploys an Nginx service with 2 replicas and exposes it on port 8080.
+- `task check` - Lists the Swarm nodes and running services.
+- `task test-nginx` - Tests if the Nginx service is accessible.
+- `task all` - Test everything e2e
+- `task cleanup` - Deletes all VMs and cleans up resources.
+
 ## Setup
 
 ```bash
@@ -44,6 +63,14 @@ docker service ls
 docker service ps nginx
 
 curl http://192.168.64.21:8080
+```
+
+## Access
+
+```bash
+multipass info swarm-manager | grep IPv4
+
+http://<manager-ip>:8080
 ```
 
 ## Using stack
