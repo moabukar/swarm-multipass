@@ -80,3 +80,24 @@ http://<manager-ip>:8080
 ```bash
 docker stack deploy -c stack.yml app
 ```
+
+## Traefik 
+
+```bash
+docker stack deploy -c traefik-stack.yml traefik
+
+docker service ls
+
+http://localhost:8080
+
+curl -H "Host: backend.localhost" http://localhost
+
+```
+
+## Troubleshooting & Cleanup
+
+```bash
+docker service logs traefik_traefik
+
+docker stack rm traefik
+```
