@@ -13,6 +13,7 @@ This demo showcases the setup of a Docker Swarm cluster using Multipass and Task
 ![Task automation demo](./images/task-automation.png)
 
 - `task init` - Launches swarm-manager and swarm-worker VMs. Installs Docker and sets up permissions.
+- `task install-docker` - installs docker on swarm-manager & worker
 - `task swarm-init` - Initialises Docker Swarm on the manager node.
 - `task join-worker` - Joins the worker node to the Swarm cluster.
 - `task deploy-nginx` - Deploys an Nginx service with 2 replicas and exposes it on port 8080.
@@ -83,7 +84,25 @@ docker stack deploy -c stack.yml app
 
 ## Traefik 
 
+### Normal
+
 ```bash
+docker compose up -d
+
+curl -H "Host: localhost" http://localhost
+```
+
+### On Swarm
+
+```bash
+
+## manual
+docker run -d --name traefik-test \
+  -p 80:80 -p 8080:8080 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  traefik:v3.0 --api.insecure=true --providers.docker
+
+## file prov
 docker stack deploy -c traefik-stack.yml traefik
 
 docker service ls

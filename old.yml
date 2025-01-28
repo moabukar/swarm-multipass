@@ -1,0 +1,68 @@
+# services:
+#   traefik:
+#     image: traefik:v3.0
+#     platform: linux/arm64
+#     command:
+#       - "--api.insecure=true"
+#       - "--api.dashboard=true"
+#       - "--providers.docker=true"
+#       - "--providers.docker.exposedbydefault=false"
+#       - "--entrypoints.web.address=:80"
+#     ports:
+#       - "80:80"
+#       - "8080:8080"
+#     volumes:
+#       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+#     restart: always
+
+#   backend:
+#     image: traefik/whoami
+#     platform: linux/arm64
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.backend.rule=Host(`localhost`)"
+#       - "traefik.http.services.backend.loadbalancer.server.port=80"
+
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:latest
+    command:
+      - --providers.docker.swarmMode=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik.yml:/etc/traefik/traefik.yml
+      # - ./letsencrypt:/letsencrypt
+    networks:
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+
+  whoami:
+    image: containous/whoami
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
+        - "traefik.http.routers.whoami.entrypoints=web"
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - traefik-public
+
+networks:
+  traefik-public:
+    external: true
